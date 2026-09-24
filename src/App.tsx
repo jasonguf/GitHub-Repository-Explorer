@@ -1,32 +1,19 @@
 import { FormEvent, useState } from 'react'
-import { fetchRepositoryPage, repositoryListUrl, type GitHubRepository } from './api/github'
+import { GitHubApiError } from './api/github'
+import { useRepositories } from './hooks/useRepositories'
 import RepositoryCard from './components/RepositoryCard'
 
 function App() {
   const [usernameInput, setUsernameInput] = useState('')
-  const [username, setUsername] = useState('')
-  const [repositories, setRepositories] = useState<GitHubRepository[]>([])
-  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
-  const [error, setError] = useState('')
+  const { state, search, loadMore } = useRepositories()
 
-  async function handleSearch(event: FormEvent<HTMLFormElement>) {
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const nextUsername = usernameInput.trim().replace(/^@/, '')
-    if (!nextUsername) return
-    setUsername(nextUsername)
-    setStatus('loading')
-    setError('')
-    setRepositories([])
-    try {
-      const page = await fetchRepositoryPage(repositoryListUrl(nextUsername), new AbortController().signal)
-      setRepositories(page.repositories)
-      setStatus('ready')
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Could not load repositories.')
-      setStatus('error')
-    }
+    const username = usernameInput.trim().replace(/^@/, '')
+    if (username) search(username)
   }
 
+  const loading = state.status === 'loading' || state.status === 'loadingMore'
   return (
     <main className="page-shell">
       <section className="hero">
@@ -35,14 +22,21 @@ function App() {
           <label htmlFor="username">GitHub username</label>
           <div className="search-control">
             <input id="username" value={usernameInput} onChange={(event) => setUsernameInput(event.target.value)} placeholder="e.g. octocat" />
-            <button type="submit" disabled={status === 'loading'}>Search</button>
+            <button type="submit" disabled={state.status === 'loading'}>Search</button>
           </div>
         </form>
       </section>
-      {status === 'loading' ? <p role="status">Loading repositories for @{username}…</p> : null}
-      {status === 'error' ? <p role="alert">{error}</p> : null}
-      {status === 'ready' && repositories.length === 0 ? <p role="status">No public repositories for @{username}.</p> : null}
-      {repositories.length > 0 ? <ul className="repository-list">{repositories.map((repository) => <RepositoryCard key={repository.id} repository={repository} />)}</ul> : null}
+      {state.status === 'loading' ? <p className="loading-state" role="status">Loading repositories for @{state.username}…</p> : null}
+      {state.status === 'error' && state.error ? <div className="state-panel" role="alert"><h2>{state.error.kind === 'not-found' ? 'User not found' : 'Could not load repositories'}</h2><p>{state.error.message}</p><button type="button" onClick={() => search(state.username)}>Try again</button></div> : null}
+      {state.status === 'ready' && state.repositories.length === 0 ? <div className="state-panel" role="status"><h2>No public repositories</h2><p>@{state.username} doesn’t have any public repositories to show.</p></div> : null}
+      {state.repositories.length > 0 ? (
+        <>
+          <h2>@{state.username} repositories</h2>
+          <ul className="repository-list">{state.repositories.map((repository) => <RepositoryCard key={repository.id} repository={repository} />)}</ul>
+          {state.status === 'moreError' && state.error ? <p className="inline-error" role="alert">{state.error.message}</p> : null}
+          {state.nextUrl ? <button type="button" onClick={loadMore} disabled={loading}>{state.status === 'loadingMore' ? 'Loading…' : state.status === 'moreError' && state.error instanceof GitHubApiError ? 'Retry' : 'Load more'}</button> : null}
+        </>
+      ) : null}
     </main>
   )
 }

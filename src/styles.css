@@ -2,11 +2,19 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
 .page-shell { max-width: 880px; margin: 0 auto; padding: 72px 24px; }
-.hero { max-width: 640px; }
+.hero { max-width: 640px; margin-bottom: 40px; }
 h1 { margin: 0 0 24px; font-size: 32px; }
 .search-form label { display: block; margin-bottom: 8px; font-size: 14px; }
 .search-control { display: flex; gap: 8px; }
 input, button { min-height: 44px; padding: 8px 12px; font: inherit; }
 input { min-width: 0; flex: 1; border: 1px solid #d0d7de; border-radius: 6px; }
 button { border: 1px solid #1f883d; border-radius: 6px; color: white; background: #1f883d; cursor: pointer; }
-@media (max-width: 520px) { .page-shell { padding: 40px 16px; } .search-control { flex-direction: column; } }
+.repository-list { list-style: none; padding: 0; border-top: 1px solid #d8dee4; }
+.repository-row { padding: 20px 0; border-bottom: 1px solid #d8dee4; }
+.repository-row h3 { margin: 0 0 8px; }
+.repository-row a { color: #0969da; }
+.repo-description { overflow-wrap: anywhere; }
+.repo-details { display: flex; gap: 20px; color: #59636e; font-size: 14px; }
+.state-panel, .loading-state { padding: 24px; border: 1px solid #d0d7de; border-radius: 8px; }
+.inline-error { color: #cf222e; }
+@media (max-width: 520px) { .page-shell { padding: 40px 16px; } .search-control { flex-direction: column; } .repo-details { flex-wrap: wrap; } }
